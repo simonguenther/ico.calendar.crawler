@@ -32,7 +32,7 @@ class ICOCrawler_Icorating(object):
         columnSlicedRows = self.get_values_from_rows(rawRows)  
         icos = self.create_project_instance_list(columnSlicedRows)
         ico_dict = self.projects_to_dictionary(icos)
-        
+
         Helper.save_dictionary_to_json(filename, ico_dict)
         Helper.save_dictionary_to_database(ico_dict)
         print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S Saved ICOs: " +str(len(icos)))     
@@ -81,6 +81,7 @@ class ICOCrawler_Icorating(object):
                 d = etree.HTML(str(row))
                 
                 name = d.xpath('//td[@class="ico-project-name js-sort-class-name"]/@data-sort')
+                description = d.xpath('//td[@class="ico-project-name js-sort-class-name"]/div[@class="visible-xs ico-project-name--description"]/text()')
                 start_date = d.xpath('//td[@class="ico-project-date js-sort-class-start"]/@data-sort')
                 end_date = d.xpath('//td[@class="ico-project-date js-sort-class-end"]/@data-sort')
                 social_media = d.xpath('//td[@class="hidden-sm ico-project-links"]/div')
@@ -88,6 +89,9 @@ class ICOCrawler_Icorating(object):
                 if name:
                     #print "name: " + str(name[0])
                     ico.name = str(name[0])
+                if description:
+                    #print "Description: "+ str(description[0])
+                    ico.description = str(description[0])
                 if start_date:
                     #print "start_date: " + start_date[0]
                     ico.start_date = str(start_date[0])
