@@ -22,7 +22,7 @@ class ICOCrawler_Icorating(object):
         pass
 
     def run(self):
-        filename = time.strftime("%d-%m-%Y - icolist.icorating.json")
+        filename = time.strftime("%d-%m-%Y %H-%M - icolist.icorating.json")
         print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S ICO Crawler for: icorating.com")        
 
         html_index = Helper.get_html(self.baseURL)

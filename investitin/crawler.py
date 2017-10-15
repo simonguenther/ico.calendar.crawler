@@ -18,7 +18,7 @@ class ICOCrawler_Investitin():
         pass
     
     def run(self):
-        filename = time.strftime("%d-%m-%Y - icolist.investin.json")
+        filename = time.strftime("%d-%m-%Y %H-%M - icolist.investin.json")
 
         print time.strftime("[investitin.com] %d-%m-%Y %H:%M:%S ICO Crawler for: investitin.com/ico-calendar")   
         html_index = Helper.get_html(self.baseURL)
