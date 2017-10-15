@@ -22,35 +22,27 @@ class ICOCrawler_Icorating(object):
         pass
 
     def run(self):
-
-        print time.strftime("%d-%m-%Y %H:%M:%S ICO Crawler for: icorating.com")        
+        filename = time.strftime("%d-%m-%Y - icolist.icorating.json")
+        print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S ICO Crawler for: icorating.com")        
 
         html_index = Helper.get_html(self.baseURL)
         rawRows = self.get_calendar_rows(html_index, self.limit)
-        print time.strftime("[icorating] %d-%m-%Y %H:%M:%S Number of ICOs to crawl: " +str(len(rawRows)))     
+        print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S Number of ICOs to crawl: " +str(len(rawRows)))     
 
         columnSlicedRows = self.get_values_from_rows(rawRows)  
         icos = self.create_project_instance_list(columnSlicedRows)
-        print time.strftime("[icorating] %d-%m-%Y %H:%M:%S Analyzed ICOs: " +str(len(icos)))     
-
-        filename = time.strftime("%d-%m-%Y - icolist.icorating.json")
         ico_dict = self.projects_to_dictionary(icos)
-        Helper.save_dictionary_to_json(filename, ico_dict)
-        self.save_dictionary_to_database(ico_dict)
         
-
-    def save_dictionary_to_database(self, dicc):
-        conn = db_sql.open_connection()
-        for x in dicc:
-            db_sql.insert_in_main(conn,dicc[x])
-        conn.close()
+        Helper.save_dictionary_to_json(filename, ico_dict)
+        Helper.save_dictionary_to_database(ico_dict)
+        print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S Saved ICOs: " +str(len(icos)))     
+        print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S Exiting.")     
 
     # Converts Projects-Instance-List to dictionary 
     def projects_to_dictionary(self, projects_list):
         ico_dict = {}
         for i in projects_list:
             ico_dict[i.name] = i.toDict()
-            #print i.toString()
         return ico_dict
     
     def get_calendar_rows(self, html, limit):
@@ -94,7 +86,7 @@ class ICOCrawler_Icorating(object):
                 social_media = d.xpath('//td[@class="hidden-sm ico-project-links"]/div')
 
                 if name:
-                    print "name: " + str(name[0])
+                    #print "name: " + str(name[0])
                     ico.name = str(name[0])
                 if start_date:
                     #print "start_date: " + start_date[0]
@@ -140,7 +132,6 @@ class ICOCrawler_Icorating(object):
                         if isInstagram:
                             ico.instagram = Helper.strip_domain(Helper.basic_instagram, isInstagram[0])                            
             # end-for singleRow
-            ico.toString()
             icolist.append(ico)
         # end-for columnRows    
         return icolist
