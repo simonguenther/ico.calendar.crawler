@@ -18,17 +18,19 @@ class ICOCrawler_Investitin():
         pass
     
     def run(self):
-        
+        filename = time.strftime("%d-%m-%Y - icolist.investin.json")
+
+        print time.strftime("[investitin.com] %d-%m-%Y %H:%M:%S ICO Crawler for: investitin.com/ico-calendar")   
         html_index = Helper.get_html(self.baseURL)
         rawRows = self.get_calendar_rows(html_index)
         contentRows = self.get_values_from_row(rawRows)
         icos = self.create_project_instance(contentRows)
-        print time.strftime("%d-%m-%Y %H:%M ICO Crawler for: Investinin.com/ico-calendar")        
-        print time.strftime("%d-%m-%Y %H:%M Analyzed ICOs: "+ str(len(icos)))
-        filename = time.strftime("%d-%m-%Y - icolist.investin.json")
-
         ico_dict = self.projects_to_dictionary(icos)
+
         Helper.save_dictionary_to_json(filename, ico_dict)
+        Helper.save_dictionary_to_database(ico_dict)
+        print time.strftime("[investitin.com] %d-%m-%Y %H:%M Analyzed ICOs: "+ str(len(icos)))
+        print time.strftime("[investitin.com] %d-%m-%Y %H:%M:%S Exiting")   
 
     # Converts Projects-Instance-List to dictionary 
     def projects_to_dictionary(self, projects_list):
@@ -81,17 +83,17 @@ class ICOCrawler_Investitin():
                 # Name and Link to Website
                 if i == 1:
                     link = values[i].findNext('a', href=True)
-                    ico.name = link.text
+                    ico.name = link.text.replace("'","")
                     #print "Analyzing: " + ico.name
                     ico.website = link["href"]
                     #print " ========= " + ico.name + " ========= "
                 # Description
                 elif i == 2:
-                    ico.description = values[i].text.encode("utf-8")
+                    ico.description = values[i].text
 
                 # Symbol
                 elif i == 3:
-                    ico.description = values[i].text
+                    ico.symbol = values[i].text
 
                 # ICO Start Date
                 elif i ==4:
@@ -107,7 +109,7 @@ class ICOCrawler_Investitin():
 
                 # Whitepaper URL
                 elif i == 7:
-                    ico.whitepaper_url = values[i].findNext('a', href=True)["href"]
+                    ico.whitepaper = values[i].findNext('a', href=True)["href"]
 
                 # Social Media Channels by domain
                 elif i >= 8:
@@ -124,26 +126,26 @@ class ICOCrawler_Investitin():
 
                         if isFacebook:
                             #print "facebook " + url
-                            ico.facebook_url = Helper.strip_domain(Helper.basic_facebook, url)
+                            ico.facebook = Helper.strip_domain(Helper.basic_facebook, url)
                         elif isGithub:
                             #print "github " + url
-                            ico.github_url = Helper.strip_domain(Helper.basic_github, url)
+                            ico.github = Helper.strip_domain(Helper.basic_github, url)
                         elif isTwitter:
                             #print "twitter " + url
-                            ico.twitter_url = Helper.strip_domain(Helper.basic_twitter, url)
+                            ico.twitter = Helper.strip_domain(Helper.basic_twitter, url)
                         elif isTelegram:
                             #print "telegram " + url
-                            ico.telegram_url = Helper.strip_domain(Helper.basic_telegram, url)
+                            ico.telegram = Helper.strip_domain(Helper.basic_telegram, url)
                         elif isBTCtalk:
                             #print "btctalk "  + url
                             url = Helper.strip_btctalk_noise(url)
-                            ico.bitcointalk_url = Helper.strip_domain(Helper.basic_btctalk, url)
+                            ico.bitcointalk = Helper.strip_domain(Helper.basic_btctalk, url)
                         elif isLinkedIn:
                             #print "linkedin " + url
-                            ico.linkedin_url = Helper.strip_domain(Helper.basic_linkedin, url)
+                            ico.linkedin = Helper.strip_domain(Helper.basic_linkedin, url)
                         elif "slack" in url:
                             #print "slack " + url
-                            ico.slack_url = url
+                            ico.slack = url
                         else:
                             # Problem here is the probably the findNext-method
                             # as it also uses the html code and finds next url usually website from next project?!
