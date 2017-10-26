@@ -1,6 +1,5 @@
 import sys
 import json
-#sys.path.insert(0, '../')
 sys.path.append('../ico.calendar.crawler')
 import Helper
 import db_sql
@@ -12,48 +11,60 @@ from Project import Project
 class ICOCrawler_Investitin():
 
     baseURL = "https://www.investitin.com/ico-calendar/"    
-    #html_index = ""
 
     def __init__(self):
         pass
     
+    def check_if_all_cells_are_empty(self, proj):
+        skip_list = ["symbol", "website", "name", "whitepaper", "description", "end_date", "start_date", "team"]
+        for attr, value in vars(proj).items():
+            if attr in skip_list:
+                continue
+            if value != "":
+                return False
+        return True
+
     def run(self):
-        filename = time.strftime("%d-%m-%Y %H-%M - icolist.investin.json")
+        filename = time.strftime("./logs/%d-%m-%Y %H-%M - icolist.investin.json")
+        filename_empty = time.strftime("./logs/%d-%m-%Y %H-%M - icolist.investin - empty symbols.json")
 
         print time.strftime("[investitin.com] %d-%m-%Y %H:%M:%S ICO Crawler for: investitin.com/ico-calendar")   
         html_index = Helper.get_html(self.baseURL)
         rawRows = self.get_calendar_rows(html_index)
         contentRows = self.get_values_from_row(rawRows)
-        icos = self.create_project_instance(contentRows)
-        ico_dict = self.projects_to_dictionary(icos)
 
+        icos = self.create_project_instance(contentRows)
+        ico_dict = Helper.projects_to_list_dictionary(icos)
         Helper.save_dictionary_to_json(filename, ico_dict)
-        Helper.save_dictionary_to_database(ico_dict)
+
+        empty_symbols = self.get_empty_symbol_projects(icos)
+        empty_symbol_icos = Helper.projects_to_list_dictionary(empty_symbols)
+        Helper.save_dictionary_to_json(filename_empty, empty_symbol_icos)
+
+        Helper.save_dictionary_to_database(Helper.projects_to_list_string_dictionary(icos))
+        
         print time.strftime("[investitin.com] %d-%m-%Y %H:%M Analyzed ICOs: "+ str(len(icos)))
         print time.strftime("[investitin.com] %d-%m-%Y %H:%M:%S Exiting")   
+        return icos
 
-    # Converts Projects-Instance-List to dictionary 
-    def projects_to_dictionary(self, projects_list):
-        ico_dict = {}
-        for i in projects_list:
-            ico_dict[i.name] = i.toDict()
-            #print i.toString()
-        return ico_dict
+    # Get empty symbol projects for manual fixing
+    def get_empty_symbol_projects(self, ico_projects):
+        empty = []
+        for each in ico_projects:
+            if self.check_if_all_cells_are_empty(each):
+                continue
+
+            if each.symbol == '' or each.symbol is None:
+                empty.append(each)
+        return empty
 
     # Returns raw html code of each ICO-row (ommitting row "1" because its the header)
     def get_calendar_rows(self,html_index):
         rows = []
         pattern = "row-[^1]\d*\s(even|odd)?$"
         soup = BeautifulSoup(html_index,"lxml")
-        count = 0
         for results in soup.findAll('tr', {'class':re.compile(pattern)}):
-            #if count == 0 or count== 1:
-            count +=1
-            #    continue
             rows.append(results)
-            
-            count +=1
-
         return rows
 
     # Slice ICO-row-content into pieces ==> relevant data, but still with unprocessed HTML tags
@@ -83,33 +94,33 @@ class ICOCrawler_Investitin():
                 # Name and Link to Website
                 if i == 1:
                     link = values[i].findNext('a', href=True)
-                    ico.name = link.text.replace("'","")
-                    #print "Analyzing: " + ico.name
-                    ico.website = link["href"]
-                    #print " ========= " + ico.name + " ========= "
+                    ico.setVariable("name", link.text)
+                    ico.setVariable("website", link["href"])
+
                 # Description
                 elif i == 2:
-                    ico.description = values[i].text
+                    ico.setVariable("description", values[i].text)
 
                 # Symbol
                 elif i == 3:
-                    ico.symbol = values[i].text
+                    ico.setVariable("symbol",values[i].text)
 
                 # ICO Start Date
                 elif i ==4:
-                    ico.start_date = values[i].text
+                    ico.setVariable("start_date", values[i].text)
 
                 # ICO End Date
                 elif i == 5:
-                    ico.end_date = values[i].text
+                    ico.setVariable("end_date", values[i].text)
 
                 # Team
                 elif i == 6:
-                    ico.team = values[i].text.encode("utf-8")
+                    ico.setVariable("team", values[i].text)
 
                 # Whitepaper URL
                 elif i == 7:
-                    ico.whitepaper = values[i].findNext('a', href=True)["href"]
+                    linkwp = values[i].findNext('a', href=True)["href"]
+                    ico.setVariable("whitepaper", linkwp)
 
                 # Social Media Channels by domain
                 elif i >= 8:
@@ -125,33 +136,21 @@ class ICOCrawler_Investitin():
                         isLinkedIn = re.match(Helper.basic_linkedin, url)
 
                         if isFacebook:
-                            #print "facebook " + url
-                            ico.facebook = Helper.strip_domain(Helper.basic_facebook, url)
+                            ico.setVariable("facebook",url)
                         elif isGithub:
-                            #print "github " + url
-                            ico.github = Helper.strip_domain(Helper.basic_github, url)
+                            ico.setVariable("github", url)
                         elif isTwitter:
-                            #print "twitter " + url
-                            ico.twitter = Helper.strip_domain(Helper.basic_twitter, url)
+                            ico.setVariable("twitter", url)
                         elif isTelegram:
-                            #print "telegram " + url
-                            ico.telegram = Helper.strip_domain(Helper.basic_telegram, url)
+                            ico.setVariable("telegram", url)
                         elif isBTCtalk:
-                            #print "btctalk "  + url
-                            url = Helper.strip_btctalk_noise(url)
-                            ico.bitcointalk = Helper.strip_domain(Helper.basic_btctalk, url)
+                            ico.setVariable("bitcointalk", url)
                         elif isLinkedIn:
-                            #print "linkedin " + url
-                            ico.linkedin = Helper.strip_domain(Helper.basic_linkedin, url)
+                            ico.setVariable("linkedin", url)
                         elif "slack" in url:
-                            #print "slack " + url
-                            ico.slack = url
-                        else:
-                            # Problem here is the probably the findNext-method
-                            # as it also uses the html code and finds next url usually website from next project?!
-                            pass
-                            #print "\telse: " + url
-                            #ico.else_ = url
+                            ico.setVariable("slack", url)
+#                        else:
+#                            pass
 
             ico_list.append(ico)
         return ico_list
