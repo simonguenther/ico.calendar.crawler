@@ -2,7 +2,6 @@ import sys
 import codecs
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 import json
-#sys.path.insert(0, '../')
 sys.path.append('../ico.calendar.crawler')
 import Helper
 import db_sql
@@ -22,7 +21,7 @@ class ICOCrawler_Icorating(object):
         pass
 
     def run(self):
-        filename = time.strftime("%d-%m-%Y %H-%M - icolist.icorating.json")
+        filename = time.strftime("logs/%d-%m-%Y %H-%M - icolist.icorating.json")
         print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S ICO Crawler for: icorating.com")        
 
         html_index = Helper.get_html(self.baseURL)
@@ -31,20 +30,14 @@ class ICOCrawler_Icorating(object):
 
         columnSlicedRows = self.get_values_from_rows(rawRows)  
         icos = self.create_project_instance_list(columnSlicedRows)
-        ico_dict = self.projects_to_dictionary(icos)
+        ico_dict = Helper.projects_to_list_dictionary(icos)
 
         Helper.save_dictionary_to_json(filename, ico_dict)
-        Helper.save_dictionary_to_database(ico_dict)
+        #Helper.save_dictionary_to_database(Helper.projects_to_list_string_dictionary(icos))
         print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S Saved ICOs: " +str(len(icos)))     
         print time.strftime("[icorating.com] %d-%m-%Y %H:%M:%S Exiting.")     
+        return icos
 
-    # Converts Projects-Instance-List to dictionary 
-    def projects_to_dictionary(self, projects_list):
-        ico_dict = {}
-        for i in projects_list:
-            ico_dict[i.name] = i.toDict()
-        return ico_dict
-    
     def get_calendar_rows(self, html, limit):
         rows = []
         soup = BeautifulSoup(html, "lxml")
@@ -87,17 +80,17 @@ class ICOCrawler_Icorating(object):
                 social_media = d.xpath('//td[@class="hidden-sm ico-project-links"]/div')
 
                 if name:
-                    #print "name: " + str(name[0])
-                    ico.name = str(name[0])
+                    ico.setVariable("name", str(name[0]))
                 if description:
-                    #print "Description: "+ str(description[0])
-                    ico.description = str(description[0])
+                    ico.setVariable("description",str(description[0]))
                 if start_date:
-                    #print "start_date: " + start_date[0]
-                    ico.start_date = str(start_date[0])
+                    start = str(start_date[0])
+                    if start != "TBA":
+                        ico.setVariable("start_date", str(start_date[0]))
                 if end_date:
-                    #print "end_date: " + end_date[0]
-                    ico.end_date = str(end_date[0])
+                    end = str(end_date[0])
+                    if end != "TBA":
+                        ico.setVariable("end_date", str(end_date[0]))
                 if social_media:
                     for url in social_media:
                         isWebsite = url.xpath('a[@class="ico-project-link--www ico-project-link"]/@href')
@@ -113,28 +106,27 @@ class ICOCrawler_Icorating(object):
                         isReddit = url.xpath('a[@class="ico-project-link--reddit ico-project-link"]/@href')
 
                         if isWebsite:
-                            ico.website = isWebsite[0]
+                            ico.setVariable("website", isWebsite[0])
                         if isFacebook:
-                            ico.facebook = Helper.strip_domain(Helper.basic_facebook, isFacebook[0])
+                            ico.setVariable("facebook", isFacebook[0])
                         if isGithub:
-                            ico.github = Helper.strip_domain(Helper.basic_github, isGithub[0])
+                            ico.setVariable("github", isGithub[0])
                         if isTwitter:
-                            ico.twitter = Helper.strip_domain(Helper.basic_twitter, isTwitter[0])
+                            ico.setVariable("twitter", isTwitter[0])
                         if isTelegram:
-                            ico.telegram = Helper.strip_domain(Helper.basic_telegram, isTelegram[0])                        
+                            ico.setVariable("telegram", isTelegram[0])
                         if isBTCtalk:
-                            btc = Helper.strip_btctalk_noise(isBTCtalk[0])
-                            ico.bitcointalk = Helper.strip_domain(Helper.basic_btctalk, btc)
+                            ico.setVariable("bitcointalk", isBTCtalk[0])
                         if isLinkedIn:
-                            ico.linkedin = Helper.strip_domain(Helper.basic_linkedin, isLinkedIn[0])
+                            ico.setVariable("linkedin", isLinkedIn[0])
                         if isMedium:
-                            ico.blog = Helper.strip_domain(Helper.basic_medium, isMedium[0])
+                            ico.setVariable("blog", isMedium[0])
                         if isSlack:
-                            ico.slack = isSlack[0]
+                            ico.setVariable("slack", isSlack[0])
                         if isReddit:
-                            ico.reddit = Helper.strip_domain(Helper.basic_reddit, isReddit[0])
+                            ico.setVariable("reddit", isReddit[0])
                         if isInstagram:
-                            ico.instagram = Helper.strip_domain(Helper.basic_instagram, isInstagram[0])                            
+                            ico.setVariable("instagram", isInstagram[0])
             # end-for singleRow
             icolist.append(ico)
         # end-for columnRows    
