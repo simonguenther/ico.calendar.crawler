@@ -17,6 +17,7 @@ class ICOCrawler_Icorating(object):
     baseURL = "http://icorating.com/"
     limit = 0 # how many ICOs should be crawled
 
+    # DID NOT YET FILTER FOR EMPTY SYMBOLS AND STUFF
     def __init__(self):
         pass
 
